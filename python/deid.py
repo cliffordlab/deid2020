@@ -100,6 +100,7 @@ def deid_phone(text_path='id.text', output_path='phone.phi'):
                     # initialize the chunk for the next note to be read
                     chunk = ''
 
+deid_phone('id.text', 'phone.phi')
 
-if __name__ == "__main__":
-    deid_phone(sys.argv[1], sys.argv[2])
+#if __name__ == "__main__":
+#    deid_phone(sys.argv[1], sys.argv[2])
