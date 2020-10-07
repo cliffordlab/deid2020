@@ -192,3 +192,17 @@ if __name__== "__main__":
     
     deid_phone(sys.argv[1], sys.argv[2])
     
+# Examining "DateYear" category.
+
+
+# ==========================
+
+# Num of true positives = 24
+
+# Num of false positives = 157
+
+# Num of false negatives = 22
+
+# Sensitivity/Recall = 0.0
+
+# PPV/Specificity = 0.0

@@ -1,0 +1,14 @@
+Examining "DateYear" category.
+
+
+==========================
+
+Num of true positives = 24
+
+Num of false positives = 157
+
+Num of false negatives = 22
+
+Sensitivity/Recall = 0.0
+
+PPV/Specificity = 0.0
