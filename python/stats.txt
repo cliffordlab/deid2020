@@ -1,0 +1,28 @@
+Examining "Date" category.
+
+
+==========================
+
+Num of true positives = 194
+
+Num of false positives = 142
+
+Num of false negatives = 288
+
+Sensitivity/Recall = 0.402
+
+PPV/Specificity = 0.6
+
+==========================
+
+*note: I don't think I can improve this much further without more prior knowledge.
+the false negatives and positives are very difficult to filter as many of the false
+positives are common descriptive values (ex: '1/3 up') and many false negatives are
+written out months ('nov.') or values ('09' or '11').
+
+Without context information and prior knowledge, it's difficult to make this more
+accurate. 
+
+Additionally, making the regex more general makes the Sensitivity and Specificity 
+go upto the +90%s but the number of false positives is significantly more than 
+the true positives (1400+) which would not be useful.

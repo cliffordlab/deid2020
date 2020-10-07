@@ -1,13 +1,20 @@
 import re
 import sys
 
-phone_pattern = '(\d{3}[-\.\s/]??\d{3}[-\.\s/]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s/]??\d{4})'
+date_pattern = '(( [1-9]| 1[012])[\/]([1-9] |[12]\d |3[01] )|' \
+               '( [1-9]| 1[012])[\/]([1-9]|[12]\d|3[01])[\/](\d\d )|' \
+               '( [1-9]| 1[012])[\/]([1-9]|[12]\d|3[01])[\/]([12]\d\d\d ))'
 
-# compiling the reg_ex would save sime time!
-ph_reg = re.compile(phone_pattern)
+# date patterns:
+# first one captures month & dates (no zeros in front of single digits): 7/10, 12/12
+# second one captures month, dates, and year (two digit years): 7/10/20, 8/10/91
+# third one captures month, dates, and year (four digit years): 7/10/2001, 8/10/1991
+
+# compiling the reg_ex would save some time!
+date_reg = re.compile(date_pattern)  # regex that captures various date expressions
 
 
-def check_for_phone(patient, note, chunk, output_handle):
+def check_for_date(patient, note, chunk, output_handle):
     """
     Inputs:
         - patient: Patient Number, will be printed in each occurance of personal information found
@@ -16,14 +23,14 @@ def check_for_phone(patient, note, chunk, output_handle):
         - output_handle: an opened file handle. The results will be written to this file.
             to avoid the time intensive operation of opening and closing the file multiple times
             during the de-identification process, the file is opened beforehand and the handle is passed
-            to this function. 
+            to this function.
     Logic:
-        Search the entire chunk for phone number occurances. Find the location of these occurances 
-        relative to the start of the chunk, and output these to the output_handle file. 
+        Search the entire chunk for date number occurances. Find the location of these occurances
+        relative to the start of the chunk, and output these to the output_handle file.
         If there are no occurances, only output Patient X Note Y (X and Y are passed in as inputs) in one line.
         Use the precompiled regular expression to find phones.
     """
-    # The perl code handles texts a bit differently, 
+    # The perl code handles texts a bit differently,
     # we found that adding this offset to start and end positions would produce the same results
     offset = 27
 
@@ -32,26 +39,28 @@ def check_for_phone(patient, note, chunk, output_handle):
 
     # search the whole chunk, and find every position that matches the regular expression
     # for each one write the results: "Start Start END"
-    # Also for debugging purposes display on the screen (and don't write to file) 
+    # Also for debugging purposes display on the screen (and don't write to file)
     # the start, end and the actual personal information that we found
-    for match in ph_reg.finditer(chunk):
+    for match in date_reg.finditer(chunk):  # only different change is that it's checking for date regex not phone
         # debug print, 'end=" "' stops print() from adding a new line
         print(patient, note, end=' ')
-        print((match.start() - offset), match.end() - offset, match.group())
+        # +1 and -1 for the start and end to get rid of the whitespacing used to match the gold standard output
+        print((match.start() - offset + 1), match.end() - offset - 1, match.group())
 
         # create the string that we want to write to file ('start start end')
-        result = str(match.start() - offset) + ' ' + str(match.start() - offset) + ' ' + str(match.end() - offset)
+        # +1 and -1 for the start and end to get rid of the whitespacing used to match the gold standard output
+        result = str(match.start() - offset + 1) + ' ' + str(match.start() - offset + 1) + ' ' + str(match.end() - offset - 1)
 
         # write the result to one line of output
         output_handle.write(result + '\n')
 
 
-def deid_phone(text_path='id.text', output_path='phone.phi'):
+def deid_date(text_path='id.text', output_path='phone.phi'):
     """
-    Inputs: 
+    Inputs:
         - text_path: path to the file containing patient records
         - output_path: path to the output file.
-    
+
     Outputs:
         for each patient note, the output file will start by a line declaring the note in the format of:
             Patient X Note Y
@@ -62,12 +71,12 @@ def deid_phone(text_path='id.text', output_path='phone.phi'):
         If there is no phone number detected in the patient note, only the first line (Patient X Note Y) is printed
         to the output
     Screen Display:
-        For each phone number detected, the following information will be displayed on the screen for debugging purposes 
+        For each phone number detected, the following information will be displayed on the screen for debugging purposes
         (these will not be written to the output file):
             start end phone_number
         where `start` is the start position of the detected phone number string, and `end` is the detected end position of the string
         both relative to the start of patient note.
-    
+
     """
     # start of each note has the patter: START_OF_RECORD=PATIENT||||NOTE||||
     # where PATIENT is the patient number and NOTE is the note number.
@@ -80,7 +89,7 @@ def deid_phone(text_path='id.text', output_path='phone.phi'):
     with open(output_path, 'w+') as output_file:
         with open(text_path) as text:
             # initilize an empty chunk. Go through the input file line by line
-            # whenever we see the start_of_record pattern, note patient and note numbers and start 
+            # whenever we see the start_of_record pattern, note patient and note numbers and start
             # adding everything to the 'chunk' until we see the end_of_record.
             chunk = ''
             for line in text:
@@ -95,12 +104,11 @@ def deid_phone(text_path='id.text', output_path='phone.phi'):
                 if len(record_end):
                     # Now we have a full patient note stored in `chunk`, along with patient numerb and note number
                     # pass all to check_for_phone to find any phone numbers in note.
-                    check_for_phone(patient, note, chunk.strip(), output_file)
+                    check_for_date(patient, note, chunk.strip(), output_file)
 
                     # initialize the chunk for the next note to be read
                     chunk = ''
 
-deid_phone('id.text', 'phone.phi')
 
-#if __name__ == "__main__":
-#    deid_phone(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    deid_date(sys.argv[1], sys.argv[2])
