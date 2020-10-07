@@ -1,9 +1,9 @@
 import re
 import sys
 
-date_pattern = '(([1-9]|1[012])[\/]([1-9]|[12]\d|3[01])|' \
-               '([1-9]|1[012])[\/]([1-9]|[12]\d|3[01])[\/](\d\d)|' \
-               '([1-9]|1[012])[\/]([1-9]|[12]\d|3[01])[\/]([12]\d\d\d))'
+date_pattern = '(( [1-9]| 1[012])[\/]([1-9] |[12]\d |3[01] )|' \
+               '( [1-9]| 1[012])[\/]([1-9]|[12]\d|3[01])[\/](\d\d )|' \
+               '( [1-9]| 1[012])[\/]([1-9]|[12]\d|3[01])[\/]([12]\d\d\d ))'
 
 # date patterns:
 # first one captures month & dates (no zeros in front of single digits): 7/10, 12/12
@@ -44,10 +44,12 @@ def check_for_date(patient, note, chunk, output_handle):
     for match in date_reg.finditer(chunk):  # only different change is that it's checking for date regex not phone
         # debug print, 'end=" "' stops print() from adding a new line
         print(patient, note, end=' ')
-        print((match.start() - offset), match.end() - offset, match.group())
+        # +1 and -1 for the start and end to get rid of the whitespacing used to match the gold standard output
+        print((match.start() - offset + 1), match.end() - offset - 1, match.group())
 
         # create the string that we want to write to file ('start start end')
-        result = str(match.start() - offset) + ' ' + str(match.start() - offset) + ' ' + str(match.end() - offset)
+        # +1 and -1 for the start and end to get rid of the whitespacing used to match the gold standard output
+        result = str(match.start() - offset + 1) + ' ' + str(match.start() - offset + 1) + ' ' + str(match.end() - offset - 1)
 
         # write the result to one line of output
         output_handle.write(result + '\n')
@@ -107,8 +109,6 @@ def deid_date(text_path='id.text', output_path='phone.phi'):
                     # initialize the chunk for the next note to be read
                     chunk = ''
 
-deid_date('id.text', 'phone.phi')
 
-
-#if __name__ == "__main__":
-#    deid_date(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    deid_date(sys.argv[1], sys.argv[2])
