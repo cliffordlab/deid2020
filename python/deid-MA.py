@@ -8,11 +8,18 @@ import sys
 # include certain leading words which possibly lead to a name
 name_prefix = ("mister", "docter", "doctors", "miss", "prof", "professor", "rev", "rabbi", 
         "nurse", "md", "princess", "prince", "deacon", "deaconess", "caregiver", "practitioner", 
-        "mr", "ms", "dr", "drs", "mrs")
-not_HCPName_list = ("and", "to", "for")
+        "mr", "ms", "dr", "drs", "mrs", "staff")
+# some stopwords
+stopwords = ("and", "but", "or", 
+        "after", "to", "for", "in", "of", 
+        "as", "at", "by", "on", "off", "from",
+        "the", "it", "about", "this", "that", "their", 
+        "with", "is", "are", "be", "no", "am", "was", "had", "has", "have", 
+        "today", "report", "aware", "if", "will", "pt", "pain",
+        "min", "max", "some", "small", "up", "down", "clear")
 
-# initializing punctuations string
-punc = '''!()-[]{};:'"\, <>./?@#$%^&*_~'''
+# initializing punctuations
+punc = '''|!()-[]{};:'"\, <>./?@#$%^&*_~/+0123456789'''
 
 def check_for_HCPName(patient, note, chunk, output_handle):
     """
@@ -32,7 +39,7 @@ def check_for_HCPName(patient, note, chunk, output_handle):
     """
     # The perl code handles texts a bit differently, 
     # we found that adding this offset to start and end positions would produce the same results
-    offset = 27
+    offset = 28
 
     # For each new note, the first line should be Patient X Note Y and then all the personal information positions
     output_handle.write('Patient {}\tNote {}\n'.format(patient,note))
@@ -44,32 +51,35 @@ def check_for_HCPName(patient, note, chunk, output_handle):
     record_words = chunk.split()
     for i in range(len(record_words)-1):
         word = record_words[i].lower()
-        if word in name_prefix:
-            potential_HCPName = record_words[i+1]
+        # if word appears in the prefix list
+        for prefix in name_prefix:
+            # in case of Dr./Dr,/Prof./Prof,
+            if prefix == word or prefix+'.' == word or prefix+',' == word:
+                potential_HCPName = record_words[i+1]
 
-            # remove punctuation
-            for charac in potential_HCPName:
-                if charac in punc:
-                    potential_HCPName = potential_HCPName.replace(charac, "")
+                # remove punctuation from the potential HCPName
+                for charac in potential_HCPName:
+                    if charac in punc:
+                        potential_HCPName = potential_HCPName.replace(charac, "")
+                if potential_HCPName ==  "": continue # if empty or just some letters after removal
 
-            # if name already exists in this chunk, then continue
-            if potential_HCPName.lower() in not_HCPName_list or \
-                potential_HCPName.lower() in checked_HCPName: 
-                    continue
-            checked_HCPName.append(potential_HCPName.lower()) # if not in the checked list, add to it
+                # if name already exists in this chunk, then continue
+                if potential_HCPName.lower() in stopwords or \
+                    potential_HCPName.lower() in checked_HCPName: 
+                        continue
+                checked_HCPName.append(potential_HCPName.lower()) # if not in the checked list, add to it
 
-            # find all same name in the record
-            HCPName_reg = re.compile("{}|{}|{}".format(
-                potential_HCPName.upper(), 
-                potential_HCPName.lower(), 
-                potential_HCPName.capitalize()))
-            for match in HCPName_reg.finditer(chunk):
-                # debug print: where it finds all HPCNames
-                print(patient, note,end=' ')
-                print((match.start()-offset),match.end()-offset, match.group())
-                result = str(match.start()-offset) + ' ' + str(match.start()-offset) +' '+ str(match.end()-offset)
+                # find all same name in the record
+                potential_patterns = [potential_HCPName.upper(), 
+                        potential_HCPName.lower(), potential_HCPName.capitalize()]
+                HCPName_reg = re.compile(r'\b(' + '|'.join(potential_patterns) + r')\b')
+                for match in HCPName_reg.finditer(chunk):
+                    # debug print: where it finds all HPCNames
+                    print(patient, note,end=' ')
+                    print((match.start()-offset),match.end()-offset, match.group())
+                    result = str(match.start()-offset) + ' ' + str(match.start()-offset) +' '+ str(match.end()-offset)
 
-                output_handle.write(result+'\n')
+                    output_handle.write(result+'\n')
 
     
     # # search the whole chunk, and find every position that matches the regular expression
